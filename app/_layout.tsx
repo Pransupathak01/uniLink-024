@@ -1,59 +1,69 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator, StatusBar, useColorScheme } from 'react-native';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import useStore from '@/store/zustand';
 
-import { useColorScheme } from '@/components/useColorScheme';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...FontAwesome.font,
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState<null>(null);
+  const colorScheme = useColorScheme();
+  const router = useRouter();
+  const segments: string[] = useSegments();
+  const { userData } = useStore();
+
+  const [fontsLoaded] = useFonts({
+    Montserrat: require('@/assets/fonts/Montserrat-Regular.ttf'),
+    MontserratMedium: require('@/assets/fonts/Montserrat-Medium.ttf'),
+    MontserratSemiBold: require('@/assets/fonts/Montserrat-SemiBold.ttf'),
+    MontserratBold: require('@/assets/fonts/Montserrat-Bold.ttf'),
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+  const handleAuthStateChanged = (user: any) => {
+    console.log('Auth state changed:', user);
+    setUser(user);
+    if (initializing) setInitializing(false);
+
+  };
+
+  // useEffect(() => {
+  //   const unsubscribe = auth().onAuthStateChanged(handleAuthStateChanged)
+  //   return () => unsubscribe();
+  // }, []);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (initializing || !fontsLoaded) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    if (user  && !inAuthGroup) {
+      router.replace('/(auth)/profile');
+    } else if (!user && inAuthGroup) {
+      router.replace('/');
     }
-  }, [loaded]);
+  }, [user, initializing, fontsLoaded]);
 
-  if (!loaded) {
-    return null;
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={'#FC6C85'} />
+      </View>
+    );
   }
-
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+   <>
+      <StatusBar
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent={false}
+      />
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       </Stack>
-    </ThemeProvider>
+    </>
   );
 }
+
+
+
