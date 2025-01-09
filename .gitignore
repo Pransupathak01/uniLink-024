@@ -2,7 +2,10 @@
 
 # dependencies
 node_modules/
-
+package-lock.json
+firebase.js
+google-services.json
+GoogleService-Info.plist
 # Expo
 .expo/
 dist/
@@ -34,3 +37,5 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+GoogleService-Info.plist
+GoogleService-Info.plist
